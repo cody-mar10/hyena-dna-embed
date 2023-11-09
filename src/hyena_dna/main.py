@@ -64,6 +64,11 @@ def per_file_main(
     module.predict_loop(file, output, verbose=verbose)
 
 
+def for_each_file(module: HyenaDNAModule, files: List[Path], outdir: Path):
+    for file in tqdm(files, desc="FASTA files"):
+        per_file_main(module, file, outdir, verbose=False)
+
+
 def main():
     args = parse_args()
     args.outdir.mkdir(parents=True, exist_ok=True)
@@ -71,10 +76,15 @@ def main():
     module = HyenaDNAModule(checkpoint=args.checkpoint)
 
     if len(args.inputs) == 1:
-        per_file_main(module, args.inputs[0], args.outdir, verbose=True)
+        maybe_file = args.inputs[0]
+
+        if maybe_file.is_dir():
+            files = list(maybe_file.glob("*.fna"))
+            for_each_file(module, files, args.outdir)
+        else:
+            per_file_main(module, maybe_file, args.outdir, verbose=True)
     else:
-        for file in tqdm(args.inputs, desc="FASTA files"):
-            per_file_main(module, file, args.outdir, verbose=False)
+        for_each_file(module, args.inputs, args.outdir)
 
 
 if __name__ == "__main__":
