@@ -7,11 +7,10 @@ import einops
 import tables as tb
 import torch
 from fastatools import FastaFile
-from huggingface import HyenaDNAPreTrainedModel
+from hyena_dna.huggingface import HyenaDNAPreTrainedModel
+from hyena_dna.standalone_hyenadna import CharacterTokenizer
 from more_itertools import ichunked
 from tqdm import tqdm
-
-from standalone_hyenadna import CharacterTokenizer
 
 FilePath = Union[str, Path]
 

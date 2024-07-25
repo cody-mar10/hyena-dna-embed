@@ -4,7 +4,7 @@ import re
 import subprocess
 
 import torch
-from standalone_hyenadna import HyenaDNAModel
+from hyena_dna.standalone_hyenadna import HyenaDNAModel
 from transformers import PreTrainedModel
 
 

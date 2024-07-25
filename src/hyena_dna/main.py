@@ -3,7 +3,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import List
 
-from embed import HyenaDNAModule
+from hyena_dna.embed import HyenaDNAModule
 from tqdm import tqdm
 
 
