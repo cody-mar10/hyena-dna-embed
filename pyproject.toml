@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hyena-dna-embed"
+version = "0.0.2"
+authors = [{ name = "Cody Martin", email = "codycmar10@gmail.com" }]
+description = "Model inference with HyenaDNA"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9,<3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+dependencies = [
+    "torch>=2",
+    "torchvision",
+    "numpy<2.0",
+    "transformers==4.26.1",
+    "tokenizers",
+    "einops",
+    "tables",
+    "pyfastatools",
+    "more-itertools",
+    "hydra-core",
+    "lightning",
+    "git-lfs",
+]
+
+[project.scripts]
+hyena-dna = "hyena_dna:main.main"
+
+[project.urls]
+"Homepage" = "https://github.com/cody-mar10/hyena-dna-embed"
+"Bug Tracker" = "https://github.com/cody-mar10/hyena-dna-embed/issues"
+
+[tool.ruff]
+src = ["src"]
+line-length = 90
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"] # allow unused imports in `__init__.py`
+
+[tool.coverage.run]
+plugins = ["covdefaults"]
