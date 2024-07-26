@@ -7,16 +7,18 @@ import einops
 import tables as tb
 import torch
 from fastatools import FastaFile
-from hyena_dna.huggingface import HyenaDNAPreTrainedModel
-from hyena_dna.standalone_hyenadna import CharacterTokenizer
 from more_itertools import ichunked
 from tqdm import tqdm
+
+from hyena_dna.huggingface import HyenaDNAPreTrainedModel
+from hyena_dna.standalone_hyenadna import CharacterTokenizer
 
 FilePath = Union[str, Path]
 
 
 class HyenaDNAModule:
     MODEL_NAME = "hyenadna-large-1m-seqlen"
+    AUTHOR = "LongSafari"
     MAX_LEN = 1_000_000
     AMBIGUOUS_CHAR = "N"
     AMBIGUOUS_CHAR_PATTERN = re.compile(r"[^ACGTN]")
@@ -29,10 +31,8 @@ class HyenaDNAModule:
 
         self.model = (
             HyenaDNAPreTrainedModel.from_pretrained(
-                path=checkpoint,
+                path=checkpoint,  # autodownloads model if not provided
                 model_name=HyenaDNAModule.MODEL_NAME,
-                download=False,
-                config=None,
                 use_head=False,
             )
             .to(self.device)
