@@ -4,8 +4,9 @@ import re
 import subprocess
 
 import torch
-from hyena_dna.standalone_hyenadna import HyenaDNAModel
 from transformers import PreTrainedModel
+
+from hyena_dna.standalone_hyenadna import HyenaDNAModel
 
 
 def inject_substring(orig_str):
@@ -51,6 +52,25 @@ def load_weights(scratch_dict, pretrained_dict, checkpointing=False):
     return scratch_dict
 
 
+def setup_git_lfs():
+    """Setup git-lfs on the user system if they haven't already"""
+
+    command = "git lfs install"
+    try:
+        subprocess.run(command, shell=True, check=True)
+    except subprocess.CalledProcessError as err:
+        if "git: 'lfs' is not a git command." in err.cmd:
+            message = """Could not initialize git-lfs. Please install git-lfs: https://github.com/git-lfs/git-lfs
+            
+            Alternatively, download the model weights manually from https://huggingface.co/LongSafari/hyenadna-large-1m-seqlen
+            """
+
+            raise RuntimeError(message) from err
+        raise err
+
+    print("git-lfs setup ok!")
+
+
 class HyenaDNAPreTrainedModel(PreTrainedModel):
     """
     An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
@@ -70,39 +90,38 @@ class HyenaDNAPreTrainedModel(PreTrainedModel):
         cls,
         path,
         model_name,
-        download=False,
-        config=None,
         device="cpu",
         use_head=False,
         n_classes=2,
     ):
         # first check if it is a local path
         pretrained_model_name_or_path = os.path.join(path, model_name)
-        if os.path.isdir(pretrained_model_name_or_path) and not download:
-            if config is None:
-                config = json.load(
-                    open(os.path.join(pretrained_model_name_or_path, "config.json"))
-                )
+        if os.path.isdir(pretrained_model_name_or_path):  # checks if exists also
+            config_file = os.path.join(pretrained_model_name_or_path, "config.json")
+
         else:
             hf_url = f"https://huggingface.co/LongSafari/{model_name}"
 
-            subprocess.run(f"rm -rf {pretrained_model_name_or_path}", shell=True)
-            command = (
-                f"mkdir -p {path} && cd {path} && git lfs install && git clone {hf_url}"
-            )
+            # setup git-lfs if not already
+            setup_git_lfs()
+
+            command = f"mkdir -p {path} && cd {path} && git clone {hf_url}"
             subprocess.run(command, shell=True)
 
-            if config is None:
-                config = json.load(
-                    open(os.path.join(pretrained_model_name_or_path, "config.json"))
-                )
+            config_file = os.path.join(pretrained_model_name_or_path, "config.json")
+
+            print(f"Downloaded model from {hf_url} to {pretrained_model_name_or_path}")
+
+        config = json.load(open(config_file))
 
         scratch_model = HyenaDNAModel(
             **config, use_head=use_head, n_classes=n_classes
         )  # the new model format
+
         loaded_ckpt = torch.load(
             os.path.join(pretrained_model_name_or_path, "weights.ckpt"),
             map_location=torch.device(device),
+            weights_only=False,
         )
 
         # need to load weights slightly different if using gradient checkpointing
