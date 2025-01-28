@@ -6,8 +6,8 @@ from typing import Union
 import einops
 import tables as tb
 import torch
-from fastatools import FastaFile
 from more_itertools import ichunked
+from pyfastatools import Parser
 from tqdm import tqdm
 
 from hyena_dna.huggingface import HyenaDNAPreTrainedModel
@@ -47,11 +47,7 @@ class HyenaDNAModule:
         )
 
     def tokenize(self, sequence: str) -> torch.Tensor:
-        return (
-            torch.tensor(self.tokenizer(sequence)["input_ids"])
-            .unsqueeze(0)
-            .to(self.device)
-        )
+        return torch.tensor(self.tokenizer(sequence)["input_ids"]).unsqueeze(0).to(self.device)
 
     @torch.inference_mode()
     def forward(self, sequence: str) -> torch.Tensor:
@@ -60,10 +56,8 @@ class HyenaDNAModule:
         output: torch.Tensor = self.model(token_ids)[:, 1:-1, :]
         return einops.reduce(output, "1 nt dim -> 1 dim", reduction="mean")
 
-    def predict_loop(
-        self, fasta_file: FilePath, output: FilePath, verbose: bool = True
-    ):
-        fasta = FastaFile(fasta_file)
+    def predict_loop(self, fasta_file: FilePath, output: FilePath, verbose: bool = True):
+        fasta = Parser(fasta_file)
         n_seqs = len(fasta)
 
         with tb.File(output, "w") as fp:
@@ -76,11 +70,9 @@ class HyenaDNAModule:
                 filters=tb.Filters(complib="blosc:lz4", complevel=4),
             )
 
-            for record in tqdm(
-                fasta.parse(), total=n_seqs, disable=not verbose, desc="Sequences"
-            ):
+            for record in tqdm(fasta, total=n_seqs, disable=not verbose, desc="Sequences"):
                 sequence = HyenaDNAModule.AMBIGUOUS_CHAR_PATTERN.sub(
-                    HyenaDNAModule.AMBIGUOUS_CHAR, record.sequence
+                    HyenaDNAModule.AMBIGUOUS_CHAR, record.seq
                 )
 
                 n_fragments = ceil(len(sequence) / self.eff_max_len)
